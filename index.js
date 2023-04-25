@@ -16,6 +16,9 @@ app.use(express.urlencoded({extended: true}));
 app.get('/', (req, res) => {
     res.send('omnia paratus');
 });
+app.get('/health', (req, res) => {
+    res.status(200);
+});
 
 app.post('/ooo', async (req, res) => {
     if (!req.body.text) {

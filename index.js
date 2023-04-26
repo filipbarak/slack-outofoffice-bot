@@ -75,6 +75,7 @@ app.post('/ooo', async (req, res) => {
     const eDate = nextParam?.split('/').length === 3 ? new Date(eYear, eMonth - 1, eDay) : sDate;
 
     const reason = eDate === sDate ? req.body.text.split(' ').slice(1).join(' ') : req.body.text.split(' ').slice(2).join(' ');
+    res.status(200).send(`Successfully added yourself as Out Of Office from ${format(sDate, 'dd/MMM/yyyy')} to ${format(eDate, 'dd/MMM/yyyy')}`);
     const user = await User.findOneAndUpdate(
         {
             email: userInfo.user.profile.email
@@ -102,8 +103,7 @@ app.post('/ooo', async (req, res) => {
         text: message,
         user: userId
     })
-    res.status(200).send(`Successfully added yourself as Out Of Office from ${format(sDate, 'dd/MMM/yyyy')} to ${format(eDate, 'dd/MMM/yyyy')}`);
-})
+}) 
 app.post('/getAll', async (req, res) => {
     let user = null;
     if (req.body.text) {

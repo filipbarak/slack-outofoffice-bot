@@ -1,6 +1,7 @@
 import * as db from './db.js';
 import express from 'express';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
 dotenv.config();
 
 const app = express();
@@ -18,6 +19,43 @@ app.get('/', (req, res) => {
 });
 app.get('/health', (req, res) => {
     res.sendStatus(200);
+});
+
+cron.schedule('0 9 * * *', async () => {
+    console.log('Cronjob created. Every day at 9:00 AM.')
+    let greeting = 'Good morning good people of SyncVR! \n Here are the people out of office today: \n';
+    let message;
+    const today = new Date();
+    const oooRecords = await OOO.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        },
+        {
+            $match: {
+                startDate: {$lte: today},
+                endDate: {$gte: today}
+            }
+        }
+    ]);
+    if (oooRecords.length === 0) {
+        message = 'No one is out of office today';
+    } else {
+        message = oooRecords.map(record => {
+            return `${record.user[0].name} is out of office, reason: "${record.reason}"`
+        }).join('\n');
+    }
+    const text = greeting + message;
+    await web.chat.postMessage({
+        channel: process.env.CHANNEL_ID,
+        text,
+    })
+}, {
+    timezone: 'Europe/Paris'
 });
 
 app.post('/ooo', async (req, res) => {

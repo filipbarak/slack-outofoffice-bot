@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     email: String,
     slackId: String,
     slackName: String,
+    team: { type: String, default: ''},
 });
 
 const oooSchema = new mongoose.Schema({

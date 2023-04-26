@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
 
 cron.schedule('0 9 * * *', async () => {
     console.log('Cronjob created. Every day at 9:00 AM.')
-    let greeting = 'Good morning good people of SyncVR! \n Here are the people out of office today: \n';
+    let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \n Here are the people out of office today: \n`;
     let message;
     const today = new Date();
     const oooRecords = await OOO.aggregate([
@@ -43,11 +43,31 @@ cron.schedule('0 9 * * *', async () => {
         }
     ]);
     if (oooRecords.length === 0) {
-        message = 'No one is out of office today';
+        message = 'No one is out of office today :ok_hand:';
     } else {
-        message = oooRecords.map(record => {
-            return `${record.user[0].name} is out of office, reason: "${record.reason}"`
-        }).join('\n');
+        const splitInTeams = oooRecords.reduce((acc, record) => {
+            const team = record.user[0].team;
+            if (!team) {
+                if (!acc['Other']) {
+                    acc['Other'] = []
+                }
+                acc['Other'].push(record);
+                return acc;
+            }
+            if (!acc[team]) {
+                acc[team] = [];
+            }
+            acc[team].push(record);
+            return acc;
+        }, {})
+        message = Object.keys(splitInTeams).reduce((acc, team) => {
+            acc += `*${team}*\n`;
+            acc += splitInTeams[team].reduce((acc, record) => {
+                acc += `${record.user[0].name} is out of office today. Reason: ${record.reason}\n`;
+                return acc;
+            }, '')
+            return acc;
+        }, '');
     }
     const text = greeting + message;
     await web.chat.postMessage({
@@ -103,7 +123,7 @@ app.post('/ooo', async (req, res) => {
         text: message,
         user: userId
     })
-}) 
+})
 app.post('/getAll', async (req, res) => {
     let user = null;
     if (req.body.text) {
@@ -136,6 +156,43 @@ app.post('/getAll', async (req, res) => {
         return `${record.user[0].name} is out of office from ${format(record.startDate, 'dd/MMM/yyyy')} to ${format(record.endDate, 'dd/MMM/yyyy')}, reason: "${record.reason}"`
     }).join('\n');
     res.status(200).send(oooRecordsString);
+});
+
+app.post('/setTeam', async (req, res) => {
+    if (!req.body.text) {
+        res.send('Team name can be one of: PLT, CON, BUS, MNG');
+        return;
+    }
+    if (!['PLT', 'CON', 'BUS', 'MNG'].includes(req.body.text)) {
+        res.send('Team name can be one of: PLT, CON, BUS, MNG');
+        return;
+    }
+    res.status(200).send(`Successfully added you in the team ${req.body.text}`);
+    const userId = req.body.user_id;
+    const found = await User.findOne({slackId: userId});
+    if (found) {
+        found.team = req.body.text;
+        await found.save();
+        return;
+    }
+    const userInfo = await web.users.info({user: userId, include_locale: true});
+    await User.findOneAndUpdate(
+        {
+            email: userInfo.user.profile.email
+        },
+        {
+            email: userInfo.user.profile.email,
+            name: userInfo.user.profile.real_name,
+            slackId: userId,
+            slackName: userInfo.user.profile.display_name,
+            team: req.body.text
+        },
+        {
+            upsert: true, new: true, setDefaultsOnInsert: true
+        })
+        .lean()
+
+
 })
 
 app.listen(process.env.PORT, '0.0.0.0', () => {

@@ -64,7 +64,7 @@ app.post('/ooo', async (req, res) => {
         text: message,
         user: userId
     })
-    res.send(`Successfully added yourself as Out Of Office from ${format(sDate, 'dd/MMM/yyyy')} to ${format(eDate, 'dd/MMM/yyyy')}`);
+    res.status(200).send(`Successfully added yourself as Out Of Office from ${format(sDate, 'dd/MMM/yyyy')} to ${format(eDate, 'dd/MMM/yyyy')}`);
 })
 app.post('/getAll', async (req, res) => {
     let user = null;
@@ -97,7 +97,7 @@ app.post('/getAll', async (req, res) => {
     const oooRecordsString = oooRecords.map(record => {
         return `${record.user[0].name} is out of office from ${format(record.startDate, 'dd/MMM/yyyy')} to ${format(record.endDate, 'dd/MMM/yyyy')}, reason: "${record.reason}"`
     }).join('\n');
-    res.send(oooRecordsString);
+    res.status(200).send(oooRecordsString);
 })
 
 app.listen(process.env.PORT, '0.0.0.0', () => {

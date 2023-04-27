@@ -22,6 +22,32 @@ app.get('/health', (req, res) => {
     res.sendStatus(200);
 });
 
+const composeMessage = (oooRecords) => {
+    const splitInTeams = oooRecords.reduce((acc, record) => {
+        const team = record.user[0].team;
+        if (!team) {
+            if (!acc['Other']) {
+                acc['Other'] = []
+            }
+            acc['Other'].push(record);
+            return acc;
+        }
+        if (!acc[team]) {
+            acc[team] = [];
+        }
+        acc[team].push(record);
+        return acc;
+    }, {})
+    return Object.keys(splitInTeams).reduce((acc, team) => {
+        acc += `*Team ${team}:*\n`;
+        acc += splitInTeams[team].reduce((acc, record) => {
+            acc += `${record.user[0].name} is out of office today. Reason: ${record.reason}\n`;
+            return acc;
+        }, '')
+        return acc;
+    }, '');
+}
+
 cron.schedule('0 9 * * 1-5', async () => {
     console.log('Cronjob created. Every day at 11:00 AM.')
     let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;
@@ -46,29 +72,7 @@ cron.schedule('0 9 * * 1-5', async () => {
     if (oooRecords.length === 0) {
         message = 'No one is out of office today :ok_hand:';
     } else {
-        const splitInTeams = oooRecords.reduce((acc, record) => {
-            const team = record.user[0].team;
-            if (!team) {
-                if (!acc['Other']) {
-                    acc['Other'] = []
-                }
-                acc['Other'].push(record);
-                return acc;
-            }
-            if (!acc[team]) {
-                acc[team] = [];
-            }
-            acc[team].push(record);
-            return acc;
-        }, {})
-        message = Object.keys(splitInTeams).reduce((acc, team) => {
-            acc += `*Team ${team}:*\n`;
-            acc += splitInTeams[team].reduce((acc, record) => {
-                acc += `${record.user[0].name} is out of office today. Reason: ${record.reason}\n`;
-                return acc;
-            }, '')
-            return acc;
-        }, '');
+        message = composeMessage(oooRecords);
     }
     const text = greeting + message;
     await web.chat.postMessage({
@@ -125,6 +129,41 @@ app.post('/ooo', async (req, res) => {
         user: userId
     })
 })
+app.post('/checkDate', async (req, res) => {
+    if (!req.body.text) {
+        res.send('Please enter the date in the format "dd/mm/yyyy"');
+        return;
+    }
+    const dateParam = req.body.text;
+    const [day, month, year] = dateParam.split('/');
+    const date = new Date(year, month - 1, day);
+    const oooRecords = await OOO.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+            }
+        },
+        {
+            $match: {
+                startDate: {$lte: date},
+                endDate: {$gte: date}
+            }
+        }
+    ]);
+    if (oooRecords.length === 0) {
+        res.send('No one is out of office on this date');
+        return;
+    } else {
+        const message = composeMessage(oooRecords);
+        res.send(message);
+        return;
+    }
+
+});
+
 app.post('/getAll', async (req, res) => {
     let user = null;
     if (req.body.text) {

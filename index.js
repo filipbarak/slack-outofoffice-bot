@@ -15,6 +15,7 @@ import { format } from 'date-fns'
 app.use(express.urlencoded({extended: true}));
 
 app.get('/', (req, res) => {
+    console.log('alive');
     res.sendStatus(200);
 });
 app.get('/health', (req, res) => {

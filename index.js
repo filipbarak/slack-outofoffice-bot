@@ -21,9 +21,9 @@ app.get('/health', (req, res) => {
     res.sendStatus(200);
 });
 
-cron.schedule('0 9 * * *', async () => {
-    console.log('Cronjob created. Every day at 9:00 AM.')
-    let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \n Here are the people out of office today: \n`;
+cron.schedule('0 11 * * *', async () => {
+    console.log('Cronjob created. Every day at 11:00 AM.')
+    let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;
     let message;
     const today = new Date();
     const oooRecords = await OOO.aggregate([
@@ -61,7 +61,7 @@ cron.schedule('0 9 * * *', async () => {
             return acc;
         }, {})
         message = Object.keys(splitInTeams).reduce((acc, team) => {
-            acc += `*${team}*\n`;
+            acc += `*Team ${team}:*\n`;
             acc += splitInTeams[team].reduce((acc, record) => {
                 acc += `${record.user[0].name} is out of office today. Reason: ${record.reason}\n`;
                 return acc;

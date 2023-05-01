@@ -171,6 +171,7 @@ app.post('/getAll', async (req, res) => {
         user = req.body.text;
     }
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const oooRecords = await OOO.aggregate([
         {
             $lookup: {

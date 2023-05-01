@@ -53,6 +53,7 @@ cron.schedule('0 9 * * 1-5', async () => {
     let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;
     let message;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const oooRecords = await OOO.aggregate([
         {
             $lookup: {

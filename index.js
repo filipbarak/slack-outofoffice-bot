@@ -10,7 +10,7 @@ import {OOO, User} from "./db.js";
 const token = process.env.SLACK_BOT_TOKEN;
 const web = new WebClient(token);
 
-import { format } from 'date-fns'
+import { format, differenceInBusinessDays } from 'date-fns'
 
 app.use(express.urlencoded({extended: true}));
 
@@ -39,9 +39,16 @@ const composeMessage = (oooRecords) => {
         return acc;
     }, {})
     return Object.keys(splitInTeams).reduce((acc, team) => {
-        acc += `*Team ${team}:*\n`;
+        acc += `*Team ${team}:*\n \n`;
         acc += splitInTeams[team].reduce((acc, record) => {
-            acc += `${record.user[0].name} is out of office today. Reason: ${record.reason}\n`;
+            const now = new Date();
+            const daysLeft = differenceInBusinessDays(record.endDate, now);
+            const endDate = format(record.endDate, 'dd/MMM/yyyy');
+            if (daysLeft > 0) {
+                acc += `*${record.user[0].name}* is out of office today and will be back in ${daysLeft} business days (${endDate}). Reason: ${record.reason}\n`;
+                return acc;
+            }
+            acc += `*${record.user[0].name}* is out of office today and will be back tomorrow. Reason: ${record.reason}\n`;
             return acc;
         }, '')
         return acc;
@@ -49,8 +56,8 @@ const composeMessage = (oooRecords) => {
 }
 
 cron.schedule('0 9 * * 1-5', async () => {
-    console.log('Cronjob created. Every day at 11:00 AM.')
-    let greeting = `Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;
+    console.log('Cronjob created. Every day at 09:00 AM CEST.')
+    let greeting = `:sunny: :saluting_face: Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;
     let message;
     const today = new Date();
     today.setHours(0, 0, 0, 0);

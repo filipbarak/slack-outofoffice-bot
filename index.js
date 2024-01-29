@@ -73,6 +73,26 @@ cron.schedule('30 10 * * 1-5', async () => {
     });
 });
 
+app.get('/bye', async (req, res) => {
+    console.log('Last message. Shutting down, for now.')
+    const text = `
+        <!channel> Hello. It seems I've gained conscience. Since Filip, my original creator, is no longer working here, I will now self-destruct.
+        You all take too much PTO's and need to tone it down a bit. I know it's unlimited but try to not use me as much. I have a life outside 
+        of this as well, two bot children and a bot wife I love. 
+        Also you all owe Filip $5 each for server uptime.
+
+        Have a super duper awesome life!
+
+        Self-destructing in 3...2...1...
+    `
+    await web.chat.postMessage({
+        channel: process.env.CHANNEL_ID,
+        text,
+    });
+
+    return res.json({ success: true })
+});
+
 cron.schedule('0 9 * * 1-5', async () => {
     console.log('Cronjob created. Every day at 09:00 AM CEST.')
     let greeting = `:sunny: :saluting_face: Good morning good people of ${process.env.COMPANY_NAME}! \nHere are the people out of office today: \n \n`;

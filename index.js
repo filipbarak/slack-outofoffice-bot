@@ -56,6 +56,7 @@ const composeMessage = (oooRecords) => {
 }
 
 cron.schedule('30 10 * * 1-5', async () => {
+    console.log('Last message. Shutting down, for now.')
     const text = `
         <!channel> Hello. It seems I've gained conscience. Since Filip, my original creator, is no longer working here, I will now self-destruct.
         You all take too much PTO's and need to tone it down a bit. I know it's unlimited but try to not use me as much. I have a life outside 
